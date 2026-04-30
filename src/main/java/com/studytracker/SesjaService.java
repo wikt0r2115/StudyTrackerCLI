@@ -4,24 +4,27 @@ import java.util.ArrayList;
 
 public class SesjaService {
     private ArrayList<Sesja> sesje;
-    private SesjaRepository repository;
+    private final SesjaRepository repository;
+
     public SesjaService() {
+        this(new SesjaRepository());
+    }
+
+    public SesjaService(SesjaRepository repository) {
         sesje = new ArrayList<>();
-        repository = new SesjaRepository();
+        this.repository = repository;
         load();
     }
 
-    private void load(){
-        try{
-            sesje = repository.wczytajZPliku();
-        }catch(Exception e){
-            sesje = new ArrayList<>();
-        }
+    private void load() {
+        sesje = repository.wczytajZPliku();
     }
 
     public void dodajSesje(Sesja s) {
-        sesje.add(s);
-        repository.zapiszDoPliku(sesje);
+        ArrayList<Sesja> noweSesje = new ArrayList<>(sesje);
+        noweSesje.add(s);
+        repository.zapiszDoPliku(noweSesje);
+        sesje = noweSesje;
     }
 
     public Integer usunSesje(String s) {
@@ -35,14 +38,16 @@ public class SesjaService {
         int c = Integer.parseInt(s);
         if (c <= 0 || c > sesje.size())
             throw new IllegalArgumentException("Nie ma takiej sesji");
-        sesje.remove(c - 1);
-        repository.zapiszDoPliku(sesje);
+        ArrayList<Sesja> noweSesje = new ArrayList<>(sesje);
+        noweSesje.remove(c - 1);
+        repository.zapiszDoPliku(noweSesje);
+        sesje = noweSesje;
         return c;
     }
 
     public String getAllAsString() {
         if (sesje.isEmpty())
-            throw new IllegalStateException("Lista jest pusta");
+            return "";
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < sesje.size(); i++) {
             s.append(i + 1 + ". " + sesje.get(i) + "\n");

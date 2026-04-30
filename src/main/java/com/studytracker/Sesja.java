@@ -6,13 +6,17 @@ public class Sesja {
     private String kategoria;
 
     public Sesja(String temat, String czas, String kategoria) {
-        this.temat = validateString(temat, "Temat");
+        this(temat, validateCzas(czas), kategoria);
+    }
+
+    public Sesja(String temat, int czas, String kategoria) {
+        this.temat = validateTemat(temat);
         this.czas = validateCzas(czas);
-        this.kategoria = validateString(kategoria, "Kategoria");
+        this.kategoria = validateKategorie(kategoria);
     }
 
     public void setTemat(String temat) {
-        this.temat = validateString(temat, "Temat");
+        this.temat = validateTemat(temat);
     }
 
     public void setCzas(String czas) {
@@ -20,7 +24,7 @@ public class Sesja {
     }
 
     public void setKategoria(String kategoria) {
-        this.kategoria = validateString(kategoria, "Kategoria");
+        this.kategoria = validateKategorie(kategoria);
     }
 
     public String getTemat() {
@@ -35,26 +39,42 @@ public class Sesja {
         return kategoria;
     }
 
-    private String validateString(String string, String co) {
+    private String validateTemat(String string) {
         if (string == null)
-            throw new IllegalArgumentException(co + " nie moze byc nullem");
-        string = string.trim().toLowerCase();
+            throw new IllegalArgumentException("Temat nie moze byc nullem");
+        string = string.trim();
         if (string.isEmpty())
-            throw new IllegalArgumentException(co + " nie moze byc pusty");
+            throw new IllegalArgumentException("Temat nie moze byc pusty");
         return string;
     }
 
-    private int validateCzas(String czas) {
+    private String validateKategorie(String string) {
+        if (string == null)
+            throw new IllegalArgumentException("Kategoria nie moze byc nullem");
+        string = string.trim().toLowerCase();
+        if (string.isEmpty())
+            throw new IllegalArgumentException("Kategoria nie moze byc pusty");
+        return string;
+    }
+
+    private static int validateCzas(String czas) {
+        if (czas == null)
+            throw new IllegalArgumentException("Czas nie moze byc nullem");
         czas = czas.trim();
         int c;
         try {
             c = Integer.parseInt(czas);
-            if (c <= 0)
-                throw new IllegalArgumentException("Liczba nie może być mniejsza badz rowna 0");
+            validateCzas(c);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Czas musi byc liczba");
         }
         return c;
+    }
+
+    private static int validateCzas(int czas) {
+        if (czas <= 0)
+            throw new IllegalArgumentException("Czas musi byc wiekszy od 0");
+        return czas;
     }
 
     public String toString() {

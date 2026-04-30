@@ -5,7 +5,15 @@ import java.util.Scanner;
 public class App {
     public static void main(String[] args) {
         Scanner scan = new Scanner(System.in);
-        SesjaService sesje = new SesjaService();
+        SesjaService sesje;
+        try {
+            sesje = new SesjaService();
+        } catch (RuntimeException e) {
+            System.out.println("Nie udalo sie wczytac danych");
+            scan.close();
+            System.exit(1);
+            return;
+        }
         String temat;
         String czas;
         String kategoria;
@@ -30,17 +38,17 @@ public class App {
                     System.out.println("Dodano sesje");
                     break;
                 case "list":
-                    try {
-                        System.out.println(sesje.getAllAsString());
-                    } catch (IllegalStateException e) {
-                        System.out.println(e.getMessage());
-                    }
+                    String lista = sesje.getAllAsString();
+                    if (lista.isEmpty())
+                        System.out.println("Lista jest pusta");
+                    else
+                        System.out.println(lista);
                     break;
                 case "delete":
                     System.out.println("Podaj numer sesji:");
                     String numer = scan.nextLine();
                     try {
-                        System.out.println("Usunieto sesje numer "+sesje.usunSesje(numer));
+                        System.out.println("Usunieto sesje numer " + sesje.usunSesje(numer));
                     } catch (IllegalStateException e) {
                         System.out.println(e.getMessage());
                     } catch (NumberFormatException e) {
