@@ -1,5 +1,7 @@
 # StudyTracker CLI
 
+[![CI](https://github.com/wikt0r2115/StudyTrackerCLI/actions/workflows/ci.yml/badge.svg)](https://github.com/wikt0r2115/StudyTrackerCLI/actions/workflows/ci.yml)
+
 [English version](README.md)
 
 StudyTracker CLI to mała aplikacja konsolowa w Javie do zapisywania sesji

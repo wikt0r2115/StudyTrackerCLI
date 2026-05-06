@@ -1,5 +1,7 @@
 # StudyTracker CLI
 
+[![CI](https://github.com/wikt0r2115/StudyTrackerCLI/actions/workflows/ci.yml/badge.svg)](https://github.com/wikt0r2115/StudyTrackerCLI/actions/workflows/ci.yml)
+
 [Polska wersja](README.pl.md)
 
 StudyTracker CLI is a small Java command-line application for recording study
