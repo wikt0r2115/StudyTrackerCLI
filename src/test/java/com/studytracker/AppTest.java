@@ -2,8 +2,13 @@ package com.studytracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,7 +57,7 @@ class AppTest {
         service.dodajSesje(new Sesja("historia", "45", "szkola"));
 
         assertEquals("1. historia - 45 - szkola\n", service.getAllAsString());
-        assertEquals(Integer.valueOf(1), service.usunSesje("1"));
+        assertEquals(1, service.usunSesje(1));
         assertEquals("", service.getAllAsString());
     }
 
@@ -61,9 +66,16 @@ class AppTest {
         SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
         service.dodajSesje(new Sesja("angielski", "20", "jezyki"));
 
-        assertThrows(NumberFormatException.class, () -> service.usunSesje("abc"));
-        assertThrows(IllegalArgumentException.class, () -> service.usunSesje("2"));
-        assertThrows(IllegalArgumentException.class, () -> service.usunSesje(""));
+        assertThrows(IllegalArgumentException.class, () -> service.usunSesje(-10));
+        assertThrows(IllegalArgumentException.class, () -> service.usunSesje(0));
+        assertThrows(IllegalArgumentException.class, () -> service.usunSesje(10));
+    }
+
+    @Test
+    void serviceOdrzucaUsuwanieZPustejListy(@TempDir Path tempDir) {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        assertThrows(IllegalStateException.class, () -> service.usunSesje(1));
     }
 
     @Test
@@ -98,8 +110,117 @@ class AppTest {
         assertThrows(RuntimeException.class, () -> service.dodajSesje(new Sesja("matematyka", "30", "szkola")));
         assertEquals("1. historia - 45 - szkola\n", service.getAllAsString());
 
-        assertThrows(RuntimeException.class, () -> service.usunSesje("1"));
+        assertThrows(RuntimeException.class, () -> service.usunSesje(1));
         assertEquals("1. historia - 45 - szkola\n", service.getAllAsString());
+    }
+
+    @Test
+    void cliPokazujePomocIWracaZKodZero(@TempDir Path tempDir) throws Exception {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        CliResult wynik = uruchomCli("help\nexit\n", service);
+
+        assertEquals(0, wynik.exitCode);
+        assertTrue(wynik.out.contains("Dostepne komendy:"));
+        assertTrue(wynik.out.contains("add    - dodaj sesje"));
+        assertEquals("", wynik.err);
+    }
+
+    @Test
+    void cliObslugujeEofNaPoziomieKomendy(@TempDir Path tempDir) throws Exception {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        CliResult wynik = uruchomCli("", service);
+
+        assertEquals(0, wynik.exitCode);
+        assertEquals("", wynik.err);
+    }
+
+    @Test
+    void cliZwracaBladPrzyEofWTrakcieKomendy(@TempDir Path tempDir) throws Exception {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        CliResult wynik = uruchomCli("add\nmatematyka\n", service);
+
+        assertEquals(1, wynik.exitCode);
+        assertTrue(wynik.err.contains("Przerwano wprowadzanie danych"));
+    }
+
+    @Test
+    void cliZwracaBladPrzyEofWTrakcieUsuwania(@TempDir Path tempDir) throws Exception {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        CliResult wynik = uruchomCli("delete\n", service);
+
+        assertEquals(1, wynik.exitCode);
+        assertTrue(wynik.err.contains("Przerwano wprowadzanie danych"));
+    }
+
+    @Test
+    void cliWypisujeBladGdyNumerUsuwanejSesjiNieJestLiczba(@TempDir Path tempDir) throws Exception {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        CliResult wynik = uruchomCli("delete\nabc\nexit\n", service);
+
+        assertEquals(0, wynik.exitCode);
+        assertTrue(wynik.err.contains("Numer sesji musi byc liczba"));
+    }
+
+    @Test
+    void cliWypisujeBledyWalidacjiNaStderr(@TempDir Path tempDir) throws Exception {
+        SesjaService service = new SesjaService(new SesjaRepository(tempDir.resolve("sesje.csv").toFile()));
+
+        CliResult wynik = uruchomCli("add\n\n30\nszkola\nexit\n", service);
+
+        assertEquals(0, wynik.exitCode);
+        assertTrue(wynik.err.contains("Temat nie moze byc pusty"));
+        assertEquals("", service.getAllAsString());
+    }
+
+    @Test
+    void cliZwracaBladGdyZapisSieNiePowiedzie() throws Exception {
+        ArrayList<Sesja> poczatkoweSesje = new ArrayList<>(Arrays.asList(new Sesja("historia", "45", "szkola")));
+        SesjaService service = new SesjaService(new AwaryjnyRepository(poczatkoweSesje));
+
+        CliResult wynik = uruchomCli("add\nmatematyka\n30\nszkola\n", service);
+
+        assertEquals(1, wynik.exitCode);
+        assertTrue(wynik.err.contains("Nie udalo sie zapisac danych: Awaria zapisu"));
+        assertEquals("1. historia - 45 - szkola\n", service.getAllAsString());
+    }
+
+    @Test
+    void cliZwracaBladGdyUsuniecieNieMozeSieZapisac() throws Exception {
+        ArrayList<Sesja> poczatkoweSesje = new ArrayList<>(Arrays.asList(new Sesja("historia", "45", "szkola")));
+        SesjaService service = new SesjaService(new AwaryjnyRepository(poczatkoweSesje));
+
+        CliResult wynik = uruchomCli("delete\n1\n", service);
+
+        assertEquals(1, wynik.exitCode);
+        assertTrue(wynik.err.contains("Nie udalo sie zapisac danych: Awaria zapisu"));
+        assertEquals("1. historia - 45 - szkola\n", service.getAllAsString());
+    }
+
+    private static CliResult uruchomCli(String wejscie, SesjaService service) throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        ByteArrayInputStream input = new ByteArrayInputStream(wejscie.getBytes(StandardCharsets.UTF_8));
+
+        int exitCode = App.run(input, new PrintStream(out, true, "UTF-8"), new PrintStream(err, true, "UTF-8"), service);
+
+        return new CliResult(exitCode, out.toString("UTF-8"), err.toString("UTF-8"));
+    }
+
+    private static class CliResult {
+        private final int exitCode;
+        private final String out;
+        private final String err;
+
+        CliResult(int exitCode, String out, String err) {
+            this.exitCode = exitCode;
+            this.out = out;
+            this.err = err;
+        }
     }
 
     private static class AwaryjnyRepository extends SesjaRepository {

@@ -27,22 +27,16 @@ public class SesjaService {
         sesje = noweSesje;
     }
 
-    public Integer usunSesje(String s) {
+    public int usunSesje(int numer) {
         if (sesje.isEmpty())
             throw new IllegalStateException("Lista jest pusta");
-        if (s == null)
-            throw new IllegalArgumentException("Numer jest nullem");
-        s = s.trim();
-        if (s.isEmpty())
-            throw new IllegalArgumentException("Numer sesji nie moze byc pusty");
-        int c = Integer.parseInt(s);
-        if (c <= 0 || c > sesje.size())
+        if (numer <= 0 || numer > sesje.size())
             throw new IllegalArgumentException("Nie ma takiej sesji");
         ArrayList<Sesja> noweSesje = new ArrayList<>(sesje);
-        noweSesje.remove(c - 1);
+        noweSesje.remove(numer - 1);
         repository.zapiszDoPliku(noweSesje);
         sesje = noweSesje;
-        return c;
+        return numer;
     }
 
     public String getAllAsString() {
