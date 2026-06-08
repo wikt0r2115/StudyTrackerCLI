@@ -128,7 +128,6 @@ saved CSV when persistence fails.
 
 ## Next Improvements
 
-- Add GitHub Actions CI for `./mvnw test`.
 - Add dates or stable IDs for sessions.
 - Add basic statistics, filtering, or export commands.
 - Consider extracting command handlers if the CLI grows further.
